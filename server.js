@@ -7,7 +7,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors({
     origin: 'http://localhost:3000'
 }));
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5000;
 
 
 
