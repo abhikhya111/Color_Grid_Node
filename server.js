@@ -5,18 +5,41 @@ const bodyParser = require("body-parser");
 app.use(bodyParser.json({ limit: "250mb" }));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors({
-    origin: 'http://localhost:3000'
+  origin: 'http://localhost:3000'
 }));
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 
 
 app.post('/colors', (req, res) => {
-  console.log("params",req.body);
+  console.log("params", req.body);
+  let { no_of_colors, height, width } = req.body;
+  console.log(no_of_colors, 'colors');
 
-  let squares = JSON.parse(req.body?.squares);
-  let color = req.body?.color
-  
+  function getColor(n, x, y) {
+    let colorArray = [];
+    let sqrs = [];
+
+    let i = 0;
+    while (i < n) {
+      var randomColor = Math.floor(Math.random() * 16777215).toString(16);
+      if (!colorArray.includes(randomColor)) {
+        colorArray.push("#" + randomColor);
+        i++;
+      }
+    }
+    for (let i = 0; i < x; i++) {
+      let row = [];
+      for (let j = 0; j < y; j++) {
+        let randomClrIdx = Math.floor(Math.random() * n);
+        row.push(colorArray[randomClrIdx]);
+      }
+      sqrs.push(row);
+    }
+    return { colorArray, sqrs };
+  }
+
+
   function isWithinGrid(row, col, numRows, numCols) {
     return row >= 0 && row < numRows && col >= 0 && col < numCols;
   }
@@ -29,8 +52,12 @@ app.post('/colors', (req, res) => {
 
     const neighbors = [
       [row - 1, col], // up
+      [row - 1, col + 1], // diagonal up right
+      [row - 1, col - 1], // diagonla up left
       [row, col + 1], // right
       [row + 1, col], // down
+      [row + 1, col - 1], // diagonal down left
+      [row + 1, col + 1], // diagonal down right
       [row, col - 1], // left
     ];
 
@@ -48,7 +75,9 @@ app.post('/colors', (req, res) => {
     return regionSize;
   }
 
+
   function findLargestRegion(grid, color) {
+    console.log(grid,color,'area');
     const numRows = grid.length;
     const numCols = grid[0].length;
     const visited = new Array(numRows)
@@ -66,12 +95,22 @@ app.post('/colors', (req, res) => {
         }
       }
     }
-
+    console.log('region ', largestRegion);
     return largestRegion;
   }
 
-  let lr = findLargestRegion(squares, color)
-  res.send({region_size: lr, color_name: color})  // <==== req.body will be a parsed JSON object
+
+  let { colorArray, sqrs } = getColor(no_of_colors, height, width);
+  let largestColorData = 0;
+  let colorName = "";
+  colorArray.forEach((el) => {
+    let largerScore = findLargestRegion(sqrs, el);
+    colorName = largestColorData < largerScore ? el : colorName;
+    largestColorData = largestColorData < largerScore ? largerScore : largestColorData;
+  });
+
+ console.log(colorName, largestColorData,'data');
+  res.send({ region_size: largestColorData, region_color: colorName, colorArray, sqrs  })  // ==== req.body will be a parsed JSON object
 });
 
 app.listen(PORT, () => {
